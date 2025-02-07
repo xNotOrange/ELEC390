@@ -48,9 +48,9 @@ def ultrasonicsensor():
             distance = round(px.ultrasonic.read(), 2)
             print("distance: ",distance)
             if distance >= SafeDistance:
-                movestraight():
+                movestraight()
             elif distance >= DangerDistance:
-                turnleft():
+                turnleft()
                 time.sleep(0.1)
             else:
                 px.set_dir_servo_angle(-30)
@@ -115,4 +115,6 @@ def grayscalesensor():
                     px.set_dir_servo_angle(-offset)
                     px.forward(px_power)
                 else:
-                    outHandle()
+                        outHandle()
+        finally:
+            sleep(5)
