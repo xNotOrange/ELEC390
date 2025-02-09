@@ -16,105 +16,152 @@ px = Picarx(grayscale_pins=['A0', 'A1', 'A2'])
 
 #Function to turn left by an angle
 #Angle will need to be positive
-def turnleft(angle):
+def turnleft(angle,speed):
     px.set_dir_servo_angle(angle)
-    px.forward(POWER)
+    px.forward(speed)
 
 #Function to turn right by an angle
 #Angle will need to be negative
-def turnright(angle):
+def turnright(angle,speed):
     px.set_dir_servo_angle(angle)
-    px.forward(POWER)  
+    px.forward(speed)  
 
 #Function to straighten vehicle then move forward
-def movestraight():
+def movestraight(speed):
     px.set_dir_servo_angle(0)
-    px.forward(POWER) 
+    px.forward(speed) 
     
 #Function to straighten vehicle then move backwards
-def reversestraight():
+def reversestraight(speed):
     px.set_dir_servo_angle(0)
-    px.backward(POWER) 
+    px.backward(speed) 
 
 #Function to stop vehicle and have it straighten the wheels    
-def park():
+def stopcar():
     px.stop()
     px.set_dir_servo_angle(0)
 
-#this is example code from the sunfounder website for using the ultrasonic sensor
-def ultrasonicsensor():  
+#Function for decceleration - numbers will have to be tweaked based on how smooth it is
+def deccelerate(direction, speed, target):
+    if direction == forward:
+        while speed > target:
+            movestraight(speed)
+            sleep (2)
+            speed = speed - 5
+    elif direction == backward:
+        while speed > target:
+            reversestraight(speed)
+            sleep (2)
+            speed = speed - 5
+            
+#Function for acceleration - numbers will have to be tweaked based on how smooth it is
+def accelerate(direction, speed, target):
+    if direction == forward:
+        while speed < target:
+            movestraight(speed)
+            sleep (2)
+            speed = speed + 5
+    elif direction == backward:
+        while speed < target:
+            reversestraight(speed)
+            sleep (2)
+            speed = speed + 5 
+    
+#Function for vehicle to follow lines with the grayscale sensor
+def followLine():
     try:
         while True:
-            distance = round(px.ultrasonic.read(), 2)
-            print("distance: ",distance)
-            if distance >= SafeDistance:
+            greyscalevalue = px.get_grayscale_data()
+            greyscalestate = px.get_line_status(greyscalevalue)
+            #[leftsensor (0) ,middlesensor (1) ,rightsensor (2)]
+            #1 means background, 0 means line
+            
+            #all sensors are on a line, the vehicle should stop
+            if greyscalestate == [0, 0, 0]:
+                px.stop()
+            #all sensors are on bg, the vehicle can proceed
+            elif greyscalestate == [1, 1, 1]:
                 movestraight()
-            elif distance >= DangerDistance:
-                turnleft()
-                time.sleep(0.1)
-            else:
-                px.set_dir_servo_angle(-30)
-                px.backward(POWER)
-                time.sleep(0.5)
-
+            #the left sensor is on a line (the robot needs to move right by an angle to be in the line)
+            elif greyscalestate[0] == 0:
+                turnright(20)
+            #the middle sensor is on a line (this is probably good, the robot can move forward)
+            elif greyscalestate[1] == 0:
+                movestraight()
+            #the right sensor is on a line (the robot needs to move left by an angle to be in the line)
+            elif greyscalestate[2] == 0:
+                turnleft(20)
+            break
     finally:
-        px.forward(0)
+        sleep(0.000000000000001)
 
-#this is example code from the sunfounder website for using the grayscale sensor 
-def grayscalesensor():
-    current_state = None
-    px_power = 10
-    offset = 20
-    last_state = "stop"
-
-    def outHandle():
-        global last_state, current_state
-        if last_state == 'left':
-            px.set_dir_servo_angle(-30)
-            px.backward(10)
-        elif last_state == 'right':
-            px.set_dir_servo_angle(30)
-            px.backward(10)
+def detectObstacles():
+    try:
         while True:
-            gm_val_list = px.get_grayscale_data()
-            gm_state = get_status(gm_val_list)
-            print("outHandle gm_val_list: %s, %s"%(gm_val_list, gm_state))
-            currentSta = gm_state
-            if currentSta != last_state:
-                break
-        sleep(0.001)
+                
+def camera():
+    try:
+        while True:
+            #idk how to code this yet
+            #basically the camera will do the visual processing stuff, then change the state for main() based on what it sees
+        #cameradata = (however the data is getting transmitted)
+        #if cameradata ==
+            #state == TrafficLight
+                #Add in code to determine light colour
+                #colour == 
+                    #if colour == 
+                        #state == Red
+        #elif cameradata ==
+            #state == 
+    finally: 
+        
+def redlight():
+    deccelerate(forward,50, 5)
+    #make sure we stop on the line
+    greyscalevalue = px.get_grayscale_data()
+    greyscalestate = px.get_line_status(greyscalevalue)
+    if greyscalestate == [0,0,0]:
+        stopcar()
+    camera()
+    while colour = red | yellow
+        stopcar()
+    state == Green
+    
+def yellowlight():
+    redlight():
+        
+def stopsign():
+    deccelerate(forward,50)
+    #make sure we stop on the line
+    greyscalevalue = px.get_grayscale_data()
+    greyscalestate = px.get_line_status(greyscalevalue)
+    if greyscalestate == [0,0,0]:
+        stopcar()
+    time.sleep(5)
+    #We may need to write an if case for if the car needs to turn left/right at an intersection but this is fine for now
+    accelerate(forward, 0 , 50)
+     movestraight(50)
+          
+def main():
+    global state
+    try:
+        while True:
+            
+            #LineFollowing code
+            followLine():
+            if state == Obstacle
+            
+            #Vehicle sees a stopsign
+            elif state == StopSign
+                stopsign():
+            #Vehicle sees a traffic light
+            elif state == TrafficLight
+                #Execute based on light colour
+                if state == Red
+                    redlight():
+                elif state == Green
+                    accelerate(forward, 0, 50)
+                elif state == Yellow
+                    yellowlight():
 
-    def get_status(val_list):
-        _state = px.get_line_status(val_list)  # [bool, bool, bool], 0 means line, 1 means background
-        if _state == [0, 0, 0]:
-            return 'stop'
-        elif _state[1] == 1:
-            return 'forward'
-        elif _state[0] == 1:
-            return 'right'
-        elif _state[2] == 1:
-            return 'left'
-
-    if __name__=='__main__':
-        try:
-            while True:
-                gm_val_list = px.get_grayscale_data()
-                gm_state = get_status(gm_val_list)
-                print("gm_val_list: %s, %s"%(gm_val_list, gm_state))
-
-                if gm_state != "stop":
-                    last_state = gm_state
-
-                if gm_state == 'forward':
-                    px.set_dir_servo_angle(0)
-                    px.forward(px_power)
-                elif gm_state == 'left':
-                    px.set_dir_servo_angle(offset)
-                    px.forward(px_power)
-                elif gm_state == 'right':
-                    px.set_dir_servo_angle(-offset)
-                    px.forward(px_power)
-                else:
-                        outHandle()
-        finally:
-            sleep(5)
+            elif state == 
