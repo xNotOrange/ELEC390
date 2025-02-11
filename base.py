@@ -2,10 +2,6 @@ from picarx import Picarx
 import time
 from time import sleep
 
-POWER = 50
-SafeDistance = 40  # > 40 safe
-DangerDistance = 20  # > 20 && < 40 turn around, < 20 backward
-
 px = Picarx(ultrasonic_pins=['D2', 'D3'])  # ultrasonic sensor
 px = Picarx(grayscale_pins=['A0', 'A1', 'A2'])  # grayscale sensor
 
@@ -64,7 +60,8 @@ def accelerate(direction, speed, target):
 def followLine():
     greyscalevalue = px.get_grayscale_data()
     greyscalestate = px.get_line_status(greyscalevalue)
-
+    print("Greyscale Value: ", greyscalevalue)
+    print("Greyscale State: ", greyscalestate)
     # all sensors are on a line, the vehicle should stop
     if greyscalestate == [0, 0, 0]:
         stopcar()
@@ -85,19 +82,39 @@ def followLine():
     elif greyscalestate[2] == 0:
         turnleft(20, POWER)
 
+#Function to detect obstacles/sudden hazards with the ultrasonic sensor
+def detectObstacles():
+    safeDistance = 30
+    dangerDistance = 40
+    try:
+        while True:
+            distance = round(px.ultrasonic.read(), 2)
+            print("distance: ",distance)
+            if distance >= safeDistance:
+                movestraight(50) 
+            elif distance >= dangerDistance:
+                stopcar()
+    finally:
+        sleep(0.00000000000000001)
+    
 #Function to use camera
 def camera():
     try:
         while True:
+            print() #placeholder so this stops popping up as an error
             #idk how to code this yet
             #basically the camera will do the visual processing stuff, then change the state for main() based on what it sees
         #cameradata = (however the data is getting transmitted)
         #if cameradata ==
             #state == TrafficLight
+    finally:
+        sleep(0.00000000000001)
 
 #Function to determine traffic light colours 
 def determinecolour():
-    
+    colour = 'green'
+    print()#placeholder so this stops popping up as an error
+    return colour #placeholder so this stops popping up as an error
     
 def redlight():
     deccelerate('forward', 50, 5)
