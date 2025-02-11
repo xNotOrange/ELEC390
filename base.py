@@ -1,7 +1,12 @@
 from picarx import Picarx
 import time
 from time import sleep
-
+from pydoc import text
+from vilib import Vilib
+from time import sleep, time, strftime, localtime
+import threading
+import readchar
+import os
 POWER = 50 #Default speed of vehicle
 forward = 1
 backward = 2
@@ -99,19 +104,31 @@ def followLine():
 
 #Function to detect obstacles/sudden hazards with the ultrasonic sensor
 def detectObstacles():
-    safeDistance = 30
+    #distances so the sensor knows what is 'safe' and what is not
+    safeDistance = 100
     dangerDistance = 40
+    
     try:
         while True:
+            #Read sensor data and save distance, print information to terminal for testing
             distance = round(px.ultrasonic.read(), 2)
             print("distance: ",distance)
+            
+            #Vehicle proceeds if distance is safe 
             if distance >= safeDistance:
-                movestraight(50) 
+                movestraight(50)
+            #Vehicle stops if there is a hazard in the danger zone
             elif distance >= dangerDistance:
-                stopcar()
+                avoidobstacle()
     finally:
         sleep(0.00000000000000001)
-    
+
+#todo: make this better
+#the vehicle needs to be able to determine if the obstacle is avoidable or if it is something it needs to stop for
+def avoidobstacle():
+    stopcar()
+
+#todo: write this   
 #Function to use camera
 def camera():
     try:
@@ -167,14 +184,14 @@ def main():
         while True:
             # Line following code
             followLine()
-
+            detectObstacles()
+            camera()
+            
             if state == Obstacle:
-                detectObstacles()
-
+                avoidobstacle()
             # Vehicle sees a stop sign
             elif state == StopSign:
                 stopsign()
-
             # Vehicle sees a traffic light
             elif state == TrafficLight:
                 determinecolour()
