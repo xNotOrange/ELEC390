@@ -2,6 +2,21 @@ from picarx import Picarx
 import time
 from time import sleep
 
+POWER = 50 #Default speed of vehicle
+forward = 1
+backward = 2
+
+#Colours
+green = 1
+red = 2
+yellow = 3
+colour = green #initial state of light
+
+#States
+Obstacle = 1
+TrafficLight = 2
+StopSign = 3
+
 px = Picarx(ultrasonic_pins=['D2', 'D3'])  # ultrasonic sensor
 px = Picarx(grayscale_pins=['A0', 'A1', 'A2'])  # grayscale sensor
 
@@ -32,12 +47,12 @@ def stopcar():
 
 # Function for deceleration - numbers will have to be tweaked based on how smooth it is
 def deccelerate(direction, speed, target):
-    if direction == 'forward':
+    if direction == forward:
         while speed > target:
             movestraight(speed)
             sleep(2)
             speed = speed - 5
-    elif direction == 'backward':
+    elif direction == backward:
         while speed > target:
             reversestraight(speed)
             sleep(2)
@@ -45,12 +60,12 @@ def deccelerate(direction, speed, target):
 
 # Function for acceleration - numbers will have to be tweaked based on how smooth it is
 def accelerate(direction, speed, target):
-    if direction == 'forward':
+    if direction == forward:
         while speed < target:
             movestraight(speed)
             sleep(2)
             speed = speed + 5
-    elif direction == 'backward':
+    elif direction == backward:
         while speed < target:
             reversestraight(speed)
             sleep(2)
@@ -112,12 +127,12 @@ def camera():
 
 #Function to determine traffic light colours 
 def determinecolour():
-    colour = 'green'
+    colour = green
     print()#placeholder so this stops popping up as an error
     return colour #placeholder so this stops popping up as an error
     
 def redlight():
-    deccelerate('forward', 50, 5)
+    deccelerate(forward, 50, 5)
     # Make sure we stop on the line
     greyscalevalue = px.get_grayscale_data()
     greyscalestate = px.get_line_status(greyscalevalue)
@@ -125,22 +140,22 @@ def redlight():
         stopcar()
 
     # Wait until the light is no longer red or yellow
-    while camera() == 'red' or camera() == 'yellow':
+    while camera() == red or camera() == yellow:
         stopcar()
-    accelerate('forward', 50, 50)
+    accelerate(forward, 50, 50)
 
 def yellowlight():
     redlight()
 
 def stopsign():
-    deccelerate('forward', 50, 5)
+    deccelerate(forward, 50, 5)
     # Make sure we stop on the line
     greyscalevalue = px.get_grayscale_data()
     greyscalestate = px.get_line_status(greyscalevalue)
     if greyscalestate == [0, 0, 0]:
         stopcar()
     time.sleep(5)  # Stop for 5 seconds
-    accelerate('forward', 0, 50)
+    accelerate(forward, 0, 50)
     movestraight(50)
 
 def main():
@@ -152,21 +167,21 @@ def main():
             # Line following code
             followLine()
 
-            if state == 'Obstacle':
+            if state == Obstacle:
                 detectObstacles()
 
             # Vehicle sees a stop sign
-            elif state == 'StopSign':
+            elif state == StopSign:
                 stopsign()
 
             # Vehicle sees a traffic light
-            elif state == 'TrafficLight':
+            elif state == TrafficLight:
                 determinecolour()
-                if colour == 'red':
+                if colour == red:
                     redlight()
-                elif colour == 'green':
-                    accelerate('forward', 0, 50)
-                elif colour == 'yellow':
+                elif colour == green:
+                    movestraight(POWER)
+                elif colour == yellow:
                     yellowlight()
     finally:
         stopcar()
