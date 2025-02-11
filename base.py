@@ -128,6 +128,7 @@ def camera():
 #Function to determine traffic light colours 
 def determinecolour():
     colour = green
+    print("Light Colour: ", colour)
     print()#placeholder so this stops popping up as an error
     return colour #placeholder so this stops popping up as an error
     
