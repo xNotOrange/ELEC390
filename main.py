@@ -235,7 +235,7 @@ def main():
             if state == Obstacle:
                 print("Obstacle detected, avoiding...")
                 stopcar()  # Stop and handle obstacle
-                avoidobstacle()  # Placeholder for actual obstacle avoidance
+                avoidObstacle()  # Placeholder for actual obstacle avoidance
             elif state == StopSign:
                 print("Stop sign detected, stopping...")
                 stopsign()
