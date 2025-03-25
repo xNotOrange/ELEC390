@@ -13,6 +13,7 @@ import networkx as nx
 from map import makegraph
 from pathfinding import findpath, find_nearest_node
 import threading
+from pid import PIDController
 
 POWER = 50 #Default speed of vehicle
 forward = 1
@@ -28,6 +29,8 @@ colour = green #initial state of light
 Obstacle = 1
 TrafficLight = 2
 StopSign = 3
+
+pid = PIDController(Kp=1.0, Ki=0.0, Kd=0.1)
 
 px = Picarx(ultrasonic_pins=['D2', 'D3'])  # ultrasonic sensor
 px = Picarx(grayscale_pins=['A0', 'A1', 'A2'])  # grayscale sensor
@@ -163,12 +166,34 @@ def follow_path():
         #Move towards this node's position
         move_towards(node_pos)
 
-# Function to move towards a specific position (placeholder for real motion control)
 def move_towards(position):
-    print(f"Moving to position {position}")
-    # Logic to move towards the position goes here.
-    # You might use a PID controller to handle more accurate positioning, etc.
-    movestraight(POWER)  # Example action
+
+    current_position = (px.get_position_x(), px.get_position_y())
+    target_x, target_y = position
+    
+    #Calculate the error (difference in x and y)
+    error_x = target_x - current_position[0]
+    error_y = target_y - current_position[1]
+    
+    error_distance = (error_x**2 + error_y**2)**0.5
+    
+    #Get the current time to calculate dt for the PID controller
+    current_time = time.time()
+    dt = current_time - getattr(move_towards, 'last_time', current_time)
+    move_towards.last_time = current_time
+    
+    #Update PID controller with the error distance and dt
+    correction = pid.update(error_distance, dt)
+    
+    #adjust the vehicle's movement
+    if correction > 0:
+        movestraight(POWER)
+    elif correction < 0:
+        reversestraight(POWER)
+
+    #stop once the vehicle is close enough to the target
+    if error_distance < 0.1:  # Close enough to the target
+        stopcar()
 
 #todo: write this   
 #Function to use camera
