@@ -7,6 +7,13 @@ from time import sleep, time, strftime, localtime
 import threading
 import readchar
 import os
+import numpy as np
+import heapq
+import networkx as nx
+from map import makegraph
+from pathfinding import findpath, find_nearest_node
+import threading
+
 POWER = 50 #Default speed of vehicle
 forward = 1
 backward = 2
@@ -24,6 +31,13 @@ StopSign = 3
 
 px = Picarx(ultrasonic_pins=['D2', 'D3'])  # ultrasonic sensor
 px = Picarx(grayscale_pins=['A0', 'A1', 'A2'])  # grayscale sensor
+
+# Create the graph from the SVG map
+graph = makegraph('map.svg')
+
+#Starting and end positions
+start_pos = (2, 2)  # Start point (in meters)
+end_pos = (7, 7)    # End point (in meters)
 
 # Function to turn left by an angle
 def turnleft(angle, speed):
@@ -128,6 +142,34 @@ def detectObstacles():
 def avoidobstacle():
     stopcar()
 
+#Pathfinding
+def findpath():
+    # Find the nearest nodes in the graph for the start and end positions
+    start_node = find_nearest_node(graph, start_pos)
+    end_node = find_nearest_node(graph, end_pos)
+
+    # Find the path using A* algorithm
+    path = findpath(graph, start_node, end_node)
+
+# Function to follow the path
+def follow_path():
+    global path
+    if not path:
+        print("No path found.")
+        return
+
+    for node in path:
+        node_pos = graph.nodes[node]['pos']
+        #Move towards this node's position
+        move_towards(node_pos)
+
+# Function to move towards a specific position (placeholder for real motion control)
+def move_towards(position):
+    print(f"Moving to position {position}")
+    # Logic to move towards the position goes here.
+    # You might use a PID controller to handle more accurate positioning, etc.
+    movestraight(POWER)  # Example action
+
 #todo: write this   
 #Function to use camera
 def camera():
@@ -178,15 +220,15 @@ def stopsign():
 
 def main():
     global state
-    state = None
-
+    
+    threading.Thread(target=followLine, daemon=True).start()
+    threading.Thread(target=detectObstacles, daemon=True).start()
+    threading.Thread(target=camera, daemon=True).start()
+    threading.Thread(target=follow_path, daemon=True).start()
+    
     try:
         while True:
-            # Line following code
-            followLine()
-            detectObstacles()
-            camera()
-            
+                  
             if state == Obstacle:
                 avoidobstacle()
             # Vehicle sees a stop sign
