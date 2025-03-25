@@ -120,7 +120,7 @@ def detectObstacles():
             state = Obstacle
             return
 
-def avoidobstacle():
+def avoidObstacle():
     global state, path, obstacle_detected
 
     #Stop the vehicle
