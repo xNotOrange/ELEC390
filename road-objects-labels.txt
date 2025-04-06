@@ -1,0 +1,5 @@
+Pedestrian
+OneWayLeft
+OneWayRight
+StopSign
+DoNotEnter
