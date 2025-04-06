@@ -1,11 +1,13 @@
 import time
 import threading
+import cv2
 from picarx import Picarx
 from pid import PIDController
 from pathfinding import findpath, find_nearest_node
 from map import makegraph
 import readchar
 import os
+from objects_on_road_processor import ObjectsOnRoadProcessor
 
 # Constants
 POWER = 50  # Default speed of vehicle
@@ -16,12 +18,12 @@ backward = 2
 green = 1
 red = 2
 yellow = 3
-colour = green  # initial state of light
+colour = green  # initial state
 
 # States
 Obstacle = 1
 TrafficLight = 2
-StopSign = 3
+StopSignState = 3
 
 # PID Controller
 pid = PIDController(Kp=1.0, Ki=0.0, Kd=0.1)
@@ -32,14 +34,16 @@ px = Picarx(ultrasonic_pins=['D2', 'D3'], grayscale_pins=['A0', 'A1', 'A2'])
 # Create the graph from the SVG map
 graph = makegraph('map.svg')
 
-# Starting and end positions
-start_pos = (2, 2)  # Start point (in meters)
-end_pos = (7, 7)    # End point (in meters)
+# Starting and end positions (in meters)
+start_pos = (2, 2)
+end_pos = (7, 7)
 
-# Global state variable
+# Global state variables
 state = None
 obstacle_detected = False
 path = []
+# Global variable to store the detected traffic object label
+traffic_state = None
 
 # Function to turn left by an angle
 def turnleft(angle, speed):
@@ -126,7 +130,7 @@ def avoidObstacle():
     #Stop the vehicle
     stopcar()
 
-    wait_time = 0 
+    wait_time = 0
 
     while wait_time < 10:
         #check again for obstacle
@@ -193,6 +197,30 @@ def move_towards(position):
     if error_distance < 0.1:  # Close enough to the target
         stopcar()
 
+# detect traffic objects
+def detectTrafficObjects():
+    global traffic_state
+    cap = cv2.VideoCapture(0)  # Use the appropriate camera index
+    processor = ObjectsOnRoadProcessor()  # Uses the Edge TPU model by default
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            continue
+        # Get detections (we only need to check the labels)
+        objects, _ = processor.detect_objects(frame)
+        found = None
+        if objects:
+            for obj in objects:
+                label = processor.labels.get(obj.label_id, "Unknown")
+                if label in ['Pedestrian', 'StopSign', 'DoNotEnter', 'OneWayLeft', 'OneWayRight']:
+                    found = label
+                    break
+        traffic_state = found
+        # Optionally, show the processed frame for debugging
+        # cv2.imshow("Traffic Detection", _)
+        # cv2.waitKey(1)
+        time.sleep(0.1)
+
 # Function to determine traffic light color (camera placeholder)
 def determinecolour():
     global colour
@@ -223,31 +251,49 @@ def stopsign():
     accelerate(forward, 0, 50)
     movestraight(50)
 
-# Main function
 def main():
-    global state
+    global state, traffic_state
     threading.Thread(target=followLine, daemon=True).start()
     threading.Thread(target=detectObstacles, daemon=True).start()
     threading.Thread(target=plan_path, daemon=True).start()
+    threading.Thread(target=detectTrafficObjects, daemon=True).start()
     
     try:
         while True:
-            if state == Obstacle:
+            # Check if a traffic object is detected.
+            if traffic_state is not None:
+                print("Traffic object detected:", traffic_state)
+                if traffic_state in ['Pedestrian', 'StopSign', 'DoNotEnter']:
+                    stopcar()
+                    # Wait briefly to allow the object to clear.
+                    time.sleep(1)
+                    continue
+                elif traffic_state == 'OneWayLeft':
+                    turnleft(20, POWER)
+                    time.sleep(0.5)
+                    continue
+                elif traffic_state == 'OneWayRight':
+                    turnright(20, POWER)
+                    time.sleep(0.5)
+                    continue
+
+            # Normal behavior (obstacle avoidance, traffic lights, path following)
+            if state == Obstacle or obstacle_detected:
                 print("Obstacle detected, avoiding...")
-                stopcar()  # Stop and handle obstacle
-                avoidObstacle()  # Placeholder for actual obstacle avoidance
-            elif state == StopSign:
-                print("Stop sign detected, stopping...")
-                stopsign()
+                stopcar()
+                avoidObstacle()
             elif state == TrafficLight:
-                colour = determinecolour()
-                print(f"Traffic light colour: {colour}")
-                if colour == red:
+                current_colour = determinecolour()
+                print(f"Traffic light colour: {current_colour}")
+                if current_colour == red:
                     redlight()
-                elif colour == green:
+                elif current_colour == green:
                     movestraight(POWER)
-                elif colour == yellow:
+                elif current_colour == yellow:
                     yellowlight()
+            else:
+                follow_path()
+
             time.sleep(0.1)
     finally:
         stopcar()
