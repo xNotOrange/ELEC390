@@ -4,7 +4,6 @@ from PIL import ImageFont
 import numpy as np
 import random
 import os
-# Let's take a random image from the test set:
 
 images_path = "/content/split-dataset/train/images"
 filenames = os.listdir(os.path.join(images_path))

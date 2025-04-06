@@ -37,7 +37,7 @@ def split_dataset(images_path, annotations_path, val_split, test_split, out_path
 
   # Get all filenames for this dir, filtered by filetype
   filenames = os.listdir(os.path.join(images_path))
-  filenames = [os.path.join(images_path, f) for f in filenames if (f.endswith('.jpg'))]
+  filenames = [os.path.join(images_path, f) for f in filenames if (f.endswith('.JPG'))]
   # Shuffle the files, deterministically
   filenames.sort()
   random.seed(42)
@@ -47,7 +47,7 @@ def split_dataset(images_path, annotations_path, val_split, test_split, out_path
   test_count = int(len(filenames) * test_split)
   for i, file in enumerate(filenames):
     source_dir, filename = os.path.split(file)
-    annot_file = os.path.join(annotations_path, filename.replace("jpg", "xml"))
+    annot_file = os.path.join(annotations_path, filename.replace("JPG", "xml"))
     if i < val_count:
       shutil.copy(file, IMAGES_VAL_DIR)
       shutil.copy(annot_file, ANNOT_VAL_DIR)
